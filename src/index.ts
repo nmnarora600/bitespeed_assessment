@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3090;
 AppDataSource.initialize().then(() => {
   app.use(express.json());
   app.use('/identify', identifyRouter);
-  app.use('/data', dataRouter);
+  app.use('/', dataRouter);
 
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
