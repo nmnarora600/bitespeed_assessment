@@ -5,23 +5,70 @@ import { Contact } from "../entity/contact";
 const identifyRouter = Router();
 
 identifyRouter.post("/", async (req, res) => {
-  const { email, phoneNumber } = req.body;
+
+  let { email, phoneNumber } = req.body;
+
+  if(email=="null" || !email){
+  email=null;
+}
+if(phoneNumber=="null" || !phoneNumber){
+  phoneNumber=null;
+}
   
-  if (!email || !phoneNumber) {
+  if (!email && !phoneNumber) {
     return res
       .status(400)
       .json({ message: "Both Email and phoneNumber are required." });
   }
 
+
   const contactRepository = AppDataSource.getRepository(Contact);
 
-  // Find all contacts matching either email or phoneNumber
-  const matchingContacts = await contactRepository.find({
-    where: [{ email }, { phoneNumber }],
-    order: { createdAt: "ASC" }, // Order by creation date
-  });
+  let mC:Contact[]=[]
+  if(phoneNumber=="null" || email=="null"){
+    if (email) {
+      // Only email provided
+      mC = await contactRepository.find({
+        where: { email },
+        order: { createdAt: "ASC" }, // Order by creation date
+      });
+    } else if (phoneNumber) {
+      // Only phoneNumber provided
+      mC = await contactRepository.find({
+        where: { phoneNumber },
+        order: { createdAt: "ASC" }, // Order by creation date
+      });
+    }
+  }
 
-  if (matchingContacts.length === 0) {
+  
+  // Find all contacts matching either email or phoneNumber
+  let matchingContacts:Contact[]=[];
+
+  if (email && phoneNumber) {
+    // Both email and phoneNumber provided
+    matchingContacts = await contactRepository.find({
+      where: [{ email }, { phoneNumber }],
+      order: { createdAt: "ASC" }, // Order by creation date
+    });
+  } else if (email) {
+    // Only email provided
+    matchingContacts = await contactRepository.find({
+      where: { email },
+      order: { createdAt: "ASC" }, // Order by creation date
+    });
+  } else if (phoneNumber) {
+    // Only phoneNumber provided
+    matchingContacts = await contactRepository.find({
+      where: { phoneNumber },
+      order: { createdAt: "ASC" }, // Order by creation date
+    });
+  }
+  if(mC.length>0){
+  
+   matchingContacts=mC; 
+  }
+  if (matchingContacts.length === 0 && phoneNumber!=null && email!=null) {
     // No matching contacts, create a new primary contact
     const newContact = contactRepository.create({
       email,
@@ -39,6 +86,7 @@ identifyRouter.post("/", async (req, res) => {
       },
     });
   }
+ 
 
   // Determine the primary contact
   let primaryContact = matchingContacts.find(
@@ -62,7 +110,7 @@ identifyRouter.post("/", async (req, res) => {
   const alreadyLinked = matchingContacts.some(
     (contact) => contact.email === email && contact.phoneNumber === phoneNumber
   );
-  if (!alreadyLinked) {
+  if (!alreadyLinked && email!=null && phoneNumber!=null) {
     const newContact = contactRepository.create({
       email,
       phoneNumber,
@@ -71,11 +119,12 @@ identifyRouter.post("/", async (req, res) => {
     });
     await contactRepository.save(newContact);
   }
+ 
 
   // Fetch updated list of contacts
-  const allLinkedContacts = await contactRepository.find({
+  const allLinkedContacts =primaryContact? await contactRepository.find({
     where: [{ linkedId: primaryContact.id }, { id: primaryContact.id }],
-  });
+  }):[];
 
   const emails = Array.from(
     new Set(allLinkedContacts.map((contact) => contact.email).filter(Boolean))
@@ -91,7 +140,7 @@ identifyRouter.post("/", async (req, res) => {
 
   return res.json({
     contact: {
-      primaryContatctId: primaryContact.id,
+      primaryContatctId: primaryContact?primaryContact.id:"no id found",
       emails,
       phoneNumbers,
       secondaryContactIds,
