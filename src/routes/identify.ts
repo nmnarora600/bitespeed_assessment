@@ -6,7 +6,7 @@ const identifyRouter = Router();
 
 identifyRouter.post("/", async (req, res) => {
   const { email, phoneNumber } = req.body;
-  console.log("req received for ", email, phoneNumber);
+  
   if (!email || !phoneNumber) {
     return res
       .status(400)
