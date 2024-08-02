@@ -8,17 +8,17 @@ identifyRouter.post("/", async (req, res) => {
 
   let { email, phoneNumber } = req.body;
 
-  if(email=="null" || !email){
+  if(email.toLowerCase()=="null" || !email){
   email=null;
 }
-if(phoneNumber=="null" || !phoneNumber){
+if(phoneNumber.toLowerCase()=="null" || !phoneNumber){
   phoneNumber=null;
 }
   
   if (!email && !phoneNumber) {
     return res
       .status(400)
-      .json({ message: "Both Email and phoneNumber are required." });
+      .json({ message: "Both Email and phoneNumber can not be NULL together." });
   }
 
 
